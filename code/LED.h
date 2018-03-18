@@ -3,7 +3,7 @@ enum positions {TREBLE, MID, BASS, USER, LIGHT, PULSE, FLASH, TOTAL};
 class LED
 {
 private:
-    uint8_t _pin, _brightness[8] = {0,0,0,0,0,0,0,0};
+    uint8_t _pin, _brightness[8] = {0,0,0,0,0,0,0,0}, activeChannels = 0;
     uint16_t _incrementStepTime = 0, _decrementStepTime = 0;
     uint16_t _onTime = 0, _offTime = 0;
     unsigned long _prevUpdate = 0;
@@ -13,25 +13,18 @@ private:
     uint8_t calculateBrightness()
     {
         float totalBrightness = 0;
-        uint8_t count = 0;
         // weighted values of all the individual brightness values make the total
         // a future update may have provisions for absolute value, but it isn't as aesthetic
         
-        for (int i = 0; i < 7; i++)
-        {
-            if(control & (1<<i))
-                count++;
-        }
-        //weight = count/255;
+        // weight = 255/activeChannels;
 
         for (int i = 0; i < 7; i++)
         {
             if(control & (1<<i))
-                totalBrightness += float(_brightness[i]*count)/255;
+                totalBrightness += float(_brightness[i])/activeChannels;
         }
-
-        // scale back to 255
-        return totalBrightness*255;
+        
+        return totalBrightness;
     }
 
 public:
@@ -42,10 +35,15 @@ public:
         pinMode(_pin,OUTPUT);
     }
 
+    void setUserBrightness(uint8_t brightness)
+    {
+        _brightness[USER] = brightness;
+    }
+
     void setBrightness(uint8_t brightness)
     {
-        _brightness[0] = brightness;
-        analogWrite(_pin,_brightness[0]);
+        _brightness[TOTAL] = brightness;
+        analogWrite(_pin,_brightness[TOTAL]);
     }
 
     uint8_t getBrightness()
@@ -53,6 +51,16 @@ public:
         // we don't want to call calculateBrightness for this
         // returns the current value of LED, which is the value after the last update
         return _brightness[TOTAL];
+    }
+
+    uint8_t getActiveChannels()
+    {
+        return activeChannels;
+    }
+
+    byte getControlParameters()
+    {
+        return control;
     }
 
     void setTime(uint16_t onTime, uint16_t offTime)
@@ -80,6 +88,14 @@ public:
         control &= ~(1<<PULSE);
         control |= (1<<FLASH);
         _state = false;
+        
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void pulse(bool pulse)
@@ -98,6 +114,14 @@ public:
         _brightness[PULSE] = 0;
         _incrementStepTime = _onTime/256;
         _decrementStepTime = _offTime/256;
+        
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void routeUser(bool user)
@@ -110,6 +134,14 @@ public:
         }
         
         control |= (1<<USER);
+
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void routeBass(bool bass)
@@ -122,6 +154,14 @@ public:
         }
         
         control |= (1<<BASS);
+        
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void routeMid(bool mid)
@@ -134,6 +174,14 @@ public:
         }
         
         control |= (1<<MID);
+
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void routeTreble(bool treble)
@@ -146,6 +194,14 @@ public:
         }
         
         control |= (1<<TREBLE);
+
+        uint8_t count = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if(control & (1<<i))
+                count++;
+        }
+        activeChannels = count;
     }
 
     void update()
