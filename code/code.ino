@@ -33,12 +33,13 @@ void setup()
     Serial.begin(115200);
     pinMode(IND, OUTPUT);
     digitalWrite(IND, HIGH);
-    red.setTime(3,5);
-    green.setTime(3,4);
-    blue.setTime(3,3);
-    red.pulse(true);
-    green.pulse(true);
-    blue.pulse(true);
+    Red.setTime(500,1000);
+    Green.setTime(1000,1500);
+    Blue.setTime(1500,2000);
+    Red.pulse(true);
+    Green.pulse(true);
+    Blue.pulse(true);
+    Red.flash(true);
 }
 
 String rxBuff;
@@ -51,9 +52,10 @@ void loop()
     if((1<<6) & redControl || (1<<5) & redControl)
     red.update();
     */
-    red.update();
-    green.update();
-    blue.update();
+    Serial.println(Red.getBrightness());
+    Red.update();
+    Green.update();
+    Blue.update();
     /*int i;
     String rx = "";
     while(blt.available())
@@ -142,7 +144,7 @@ void getVars(String rx)
     //Serial.println(findRed);
     //Serial.println(findGreen);
     //Serial.println(findBlue);
-    red = findRed.toInt();
-    green = findGreen.toInt();
-    blue = findBlue.toInt();
+    //red = findRed.toInt();
+    //green = findGreen.toInt();
+    //blue = findBlue.toInt();
 }
