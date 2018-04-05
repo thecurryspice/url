@@ -11,7 +11,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.led_on_off.led.SplashScreen"
+            android:name="com.led_on_off.led.MainActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,14 +19,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.led_on_off.led.DeviceList"
-            android:label="@string/app_name">
-
-        </activity>
 
         <activity
-            android:name="com.led_on_off.led.ledControl"
+            android:name="com.led_on_off.led.LEDControl"
             android:label="LED Control">
 
         </activity>
