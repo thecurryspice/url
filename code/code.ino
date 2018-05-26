@@ -1,45 +1,43 @@
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 #include "LED.h"
-#define IND 13
+String red = "", green = "", blue = "";
+SoftwareSerial blt(8,7);
 
-//uint8_t red = 0, green = 0, blue = 0;
-//SoftwareSerial blt(8,7);
-/*
-
-1 byte sent for each colour
-
-pos       7       6       5       4       3       2       1       0
-route     0       0       0       0       0       0       0       0
-                  F       P       L       U       B       M       T
-
-F : Flash
-L : Watch External Light Levels
-P : Pulse (Breather Mode)
-U : User
-B : Bass
-M : Mid
-T : Treble
-
-*/
-
-
-LED Red(5);
-LED Green(3);
-LED Blue(6);
+LED Red(6);
+LED Green(9);
+LED Blue(10);
 
 void setup()
 { 
-    //blt.begin(9600);
+    blt.begin(9600);
     Serial.begin(115200);
     pinMode(IND, OUTPUT);
-    digitalWrite(IND, HIGH);
-    Red.setTime(500,1000);
-    Green.setTime(1000,1500);
-    Blue.setTime(1500,2000);
-    Red.pulse(true);
-    Green.pulse(true);
-    Blue.pulse(true);
-    Red.flash(true);
+    
+    Red.setTime(5000,5000);
+    Green.setTime(5000,5000);
+    Blue.setTime(5000,5000);
+    
+    // Red.pulse(true);
+    // Red.watchExternalLight(true,127);
+    // Red.routeBass(true);
+    Red.routeUser(true);
+    // Red.setUserBrightness(255);
+    // Serial.println(Red.getActiveChannels());
+    
+    // Green.pulse(true);
+    // Green.watchExternalLight(true,200);
+    // Green.routeMid(true);
+    Green.routeUser(true);
+    // Green.setUserBrightness(255);
+    // Serial.println(Green.getActiveChannels());
+    
+    // Blue.pulse(true);
+    // Blue.watchExternalLight(true,127);
+    // Blue.routeTreble(true);
+    Blue.routeUser(true);
+    // Blue.setUserBrightness(255);
+    // Serial.println(Blue.getActiveChannels());
+    
 }
 
 String rxBuff;
@@ -52,17 +50,117 @@ void loop()
     if((1<<6) & redControl || (1<<5) & redControl)
     red.update();
     */
-    Serial.println(Red.getBrightness());
     Red.update();
     Green.update();
     Blue.update();
-    /*int i;
-    String rx = "";
+    int i;
+    String rx = "", red = "", green = "", blue = "";
     while(blt.available())
     {
         char c = blt.read();
+        /*Serial.print(c);
+        Serial.print("\t");
+        Serial.print(char(c));
+        Serial.print("\t");
+        Serial.println(uint8_t(c));*/
         rx += c;
+        delay(2);
     }
+    if(rx != "")
+    {
+        Serial.println(rx);
+        uint8_t n = rx.length();
+        for(uint8_t i = 0; i < n; i++)
+        {
+            if(rx.charAt(i) == 'R')
+            {
+                for(uint8_t j = i+1; j < n; j++)
+                {
+                    if(isDigit(rx.charAt(j)))
+                        red += rx.charAt(j);
+                    else
+                        break;
+                }
+            }
+            else if(rx.charAt(i) == 'G')
+            {
+                for(uint8_t j = i+1; j < n; j++)
+                {
+                    if(isDigit(rx.charAt(j)))
+                        green += rx.charAt(j);
+                    else
+                        break;
+                }
+            }
+            else if(rx.charAt(i) == 'B')
+            {
+                for(uint8_t j = i+1; j < n; j++)
+                {
+                    if(isDigit(rx.charAt(j)))
+                        blue += rx.charAt(j);
+                    else
+                        break;
+                }
+            }
+        }
+        n = rx.indexOf('~');
+        if(rx.charAt(n+1) == 'F')
+            Red.flash(true);
+        else if(rx.charAt(n+1) == 'P')
+            Red.pulse(true);
+        else
+        {
+            Red.flash(false);
+            Red.pulse(false);
+        }
+        if(rx.charAt(n+2) == 'F')
+            Green.flash(true);
+        else if(rx.charAt(n+2) == 'P')
+            Green.pulse(true);
+        else
+        {
+            Green.flash(false);
+            Green.pulse(false);
+        }
+        if(rx.charAt(n+3) == 'F')
+            Blue.flash(true);
+        else if(rx.charAt(n+3) == 'P')
+            Blue.pulse(true);
+        else
+        {
+            Blue.flash(false);
+            Blue.pulse(false);
+        }
+        Serial.print(red);
+        Serial.print("\t");
+        Serial.print(green);
+        Serial.print("\t");
+        Serial.println(blue);
+        if(!red.toInt())
+            Red.routeUser(false);
+        else
+        {
+            Red.routeUser(true);
+            Red.setUserBrightness(red.toInt());
+        }
+        if(!green.toInt())
+            Green.routeUser(false);
+        else
+        {
+            Green.routeUser(true);
+            Green.setUserBrightness(green.toInt());
+        }
+        if(!blue.toInt())
+            Blue.routeUser(false);
+        else
+        {
+            Blue.routeUser(true);
+            Blue.setUserBrightness(blue.toInt());
+        }
+        blt.write("#1~");
+    }
+
+    /*
     if(rx.length() == 1)
     rxBuff = rx;
     if(rx != "")

@@ -15,6 +15,7 @@ An extremely aesthetic add-on to your workspace.
 
 ## Hardware
 
-* 3 x NPN MOSFETs dedicated for each colour
-* HC-05 Bluetooth Module
 * ATMega328
+* HC-05 Bluetooth Module
+* 3 x NPN MOSFETs dedicated for each colour
+* LM324 (Second Order Active Filters (LowPass, BandPass, HighPass))
