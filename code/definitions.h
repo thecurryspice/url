@@ -1,3 +1,6 @@
+#ifndef definitions_h
+#define definitions_h
+
 #define IND 13
 #define INDON digitalWrite(IND, HIGH);
 #define INDOFF digitalWrite(IND, LOW);
@@ -5,12 +8,41 @@
 #define MIDPIN A1
 #define TREBLEPIN A2
 #define LDRPIN A3
-#define GETBASS analogRead(BASSPIN)
-#define GETMID analogRead(MIDPIN)
-#define GETTREBLE analogRead(TREBLEPIN)
+#define GETBASS analogRead8bit(BASSPIN)
+#define GETMID analogRead8bit(MIDPIN)
+#define GETTREBLE analogRead8bit(TREBLEPIN)
 #define EXTLIGHT analogRead(LDRPIN)
 
 enum positions {LIGHT, TREBLE, MID, BASS, USER, PULSE, FLASH, TOTAL};
+
+uint8_t analogRead8bit(uint8_t pin)
+{
+	uint8_t result;
+
+	// set ADLAR high
+	ADMUX |= _BV(ADLAR);
+
+#if defined(ADMUX)
+	ADMUX = (analog_reference << 6) | (pin & 0x07);
+#endif
+
+#if defined(ADCSRA) && defined(ADCL)
+	// start the conversion
+	sbi(ADCSRA, ADSC);
+
+	// ADSC is cleared when the conversion finishes
+	while (bit_is_set(ADCSRA, ADSC));
+
+	//read only ADCH, 8 bits
+	result = ADCH;
+#else
+	// we don't have an ADC, return 0
+	result = 0;
+#endif
+
+	// combine the two bytes
+	return result;
+}
 
 /*
 ------------
@@ -36,9 +68,21 @@ T : Treble
 CONTROL BYTE
 ------------
 
+-------------------------------------------------------------------------
 
-CONTROL PACKET : 3 x CONTROL BYTES
----------------------------------------------
+--------------
+CONTROL PACKET
+--------------
+
+C<X><char>
+
+Eg: ~CRB		(where B represents 66, hence Flashing and Mid routing)
+
+--------------
+CONTROL PACKET
+--------------
+
+-------------------------------------------------------------------------
 
 ------------
 DATA PACKETS
@@ -46,13 +90,23 @@ DATA PACKETS
 
 X = R/G/B
 
-TIME 		:	<X><uint16_t><uint16_t>
+TIME 		:	T<X><char><char><char><char>
+					
+	where   :	<char>    <char>			16-bit total-value
+			  multiplier  remainder		255*multiplier + remainder
 
-USER 		:	<X><uint8_t>
+USER 		:	U<X><char>
 
-EXTLIGHT	:	<X><uint8_t>
+EXTLIGHT	:	E<X><char>
+
+
+Eg:	~TGmXxM	==> 	onTime = 255*109 + 88	offTime = 255*120 + 77
+	~URn
+	~EB/
 
 ------------
 DATA PACKETS
 ------------
 */
+
+#endif
