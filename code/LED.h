@@ -1,14 +1,25 @@
 #include "definitions.h"
 
+#ifndef LED_h
+#define LED_h
+
+#if ARDUINO >= 100
+  #include "Arduino.h"
+#else
+  #include "WProgram.h"
+  #include "pins_arduino.h"
+  #include "WConstants.h"
+#endif
+
 class LED
 {
 private:
-    uint8_t _pin, _brightness[8] = {0,0,0,0,0,0,0,0}, activeChannels = 0, _maxBrightness = 255, _minBrightness = 0;
+    uint8_t _pin, _brightness[8] = {0,0,0,0,0,0,0,0}, _activeChannels = 0, _maxBrightness = 255, _minBrightness = 0, _colourDepth = 0, _stepValue = 1;
     uint16_t _incrementStepTime = 0, _decrementStepTime = 0;
     uint16_t _onTime = 0, _offTime = 0;
     unsigned long _prevUpdate = 0;
     bool _state;
-    byte control = 0b00000000;    
+    byte _control = 0b00000000;    
 
 public:
     LED(uint8_t pin)
@@ -29,6 +40,23 @@ public:
         analogWrite(_pin,_brightness[TOTAL]);
     }
 
+    void setColourDepth(uint8_t colourDepth)
+    {
+        _colourDepth = colourDepth;
+        // have to add more things here
+        _stepValue = 256/pow(2,_colourDepth);
+        //we need to prepare variables again
+        if(_control & (1<<PULSE))
+            pulse(true);
+        if(_control & (1<<FLASH))
+            flash(true);
+    }
+
+    uint8_t getColourDepth()
+    {
+        return _colourDepth;
+    }
+
     uint8_t getBrightness()
     {
         // we don't want to call calculateBrightness here,
@@ -42,7 +70,7 @@ public:
         uint8_t count = 0;
         for (int i = 0; i < 7; i++)
         {
-            if(control & (1<<i))
+            if(_control & (1<<i))
                 count++;
         }
         return count;
@@ -50,8 +78,26 @@ public:
 
     byte getControlParameters()
     {
-        // return the control byte
-        return control;
+        // return the _control byte
+        return _control;
+    }
+
+    bool setControlParameters(byte control)
+    {
+        if(control & (1<<PULSE) && control & (1<<FLASH))
+            //flash and pulse should not be simultaneuosly on
+            return false;
+        else
+        {
+            (control & (1<<FLASH)) ? flash(true) : flash(false);
+            (control & (1<<PULSE)) ? pulse(true) : pulse(false);
+            (control & (1<<EXTLIGHT)) ? watchExternalLight(true) : watchExternalLight(false);
+            (control & (1<<USER)) ? routeUser(true) : routeUser(false);
+            (control & (1<<BASS)) ? routeBass(true) : routeBass(false);
+            (control & (1<<MID)) ? routeMid(true) : routeMid(false);
+            (control & (1<<TREBLE)) ? routeTreble(true) : routeTreble(false);
+        }
+        return true;
     }
 
     void avoid(uint8_t a, uint8_t t, uint8_t thresh) {}
@@ -79,9 +125,9 @@ public:
         // defaults to 0, which means no limit
         _maxBrightness = brightness;
         // update timing parameters
-        if(control & (1<<PULSE))
+        if(_control & (1<<PULSE))
             pulse(true);
-        if(control & (1<<FLASH))
+        if(_control & (1<<FLASH))
             flash(true);        
     }
 
@@ -93,9 +139,9 @@ public:
         _minBrightness = minBrightness;
 
         // update timing parameters
-        if(control & (1<<PULSE))
+        if(_control & (1<<PULSE))
             pulse(true);
-        if(control & (1<<FLASH))
+        if(_control & (1<<FLASH))
             flash(true);
     }
 
@@ -103,93 +149,92 @@ public:
     {
         if(!flash)
         {
-            control = control & ~(1<<FLASH);
+            _control = _control & ~(1<<FLASH);
             // nothing more to do if flashing has been switched off    
             return;
         }
 
         // switch off pulsing before flashing
-        control &= ~(1<<PULSE);
-        control |= (1<<FLASH);
+        _control &= ~(1<<PULSE);
+        _control |= (1<<FLASH);
         _state = false;
         
-        activeChannels = getActiveChannels();
+        _activeChannels = getActiveChannels();
     }
 
     void pulse(bool pulse)
     {
         if(!pulse)
         {
-            control = control & ~(1<<PULSE);
+            _control = _control & ~(1<<PULSE);
             // nothing more to do if pulse has been switched off
             return;
         }
 
         // switch off flashing before pulsing
-        control &= ~(1<<FLASH);
-        control |= (1<<PULSE);
+        _control &= ~(1<<FLASH);
+        _control |= (1<<PULSE);
         _state = false;
         _brightness[PULSE] = 0;
-        _incrementStepTime = _onTime/(_maxBrightness - _minBrightness + 1);
-        _decrementStepTime = _offTime/(_maxBrightness - _minBrightness + 1);
-        
-        activeChannels = getActiveChannels();
+        _incrementStepTime = (_onTime/(_maxBrightness - _minBrightness))*(_stepValue);
+        _decrementStepTime = (_offTime/(_maxBrightness - _minBrightness))*(_stepValue);
+        _activeChannels = getActiveChannels();
     }
 
     void routeUser(bool user)
     {
         if(!user)
         {
-            control &= ~(1<<USER);
+            _control &= ~(1<<USER);
             // nothing more to do if user input is disabled  
             return;   
         }
         
-        control |= (1<<USER);
+        _control |= (1<<USER);
 
-        activeChannels = getActiveChannels();
+        _activeChannels = getActiveChannels();
     }
 
     void routeBass(bool bass)
     {
         if(!bass)
         {
-            control &= ~(1<<BASS);
+            _control &= ~(1<<BASS);
             // nothing more to do if bass is not being routed   
             return;   
         }
         
-        control |= (1<<BASS);
+        _control |= (1<<BASS);
         
-        activeChannels = getActiveChannels();
+        _activeChannels = getActiveChannels();
     }
 
     void routeMid(bool mid)
     {
         if(!mid)
         {
-            control &= ~(1<<MID);
+            _control &= ~(1<<MID);
             // nothing more to do if mid is not being routed   
             return;   
         }
         
-        control |= (1<<MID);
+        _control |= (1<<MID);
 
-        activeChannels = getActiveChannels();
+        _activeChannels = getActiveChannels();
     }
 
     void routeTreble(bool treble)
     {
         if(!treble)
         {
-            control &= ~(1<<TREBLE);
+            _control &= ~(1<<TREBLE);
             // nothing more to do if treble is not being routed   
             return;   
         }
         
-        control |= (1<<TREBLE);
+        _control |= (1<<TREBLE);
 
-        activeChannels = getActiveChannels();
+        _activeChannels = getActiveChannels();
     }
 
     void watchExternalLight(bool extlight, uint8_t brightness)
@@ -197,20 +242,20 @@ public:
         _brightness[LIGHT] = brightness;
         if(!extlight)
         {
-            control &= ~(1<<LIGHT);
+            _control &= ~(1<<LIGHT);
             return;
         }
-        control |= (1<<LIGHT);
+        _control |= (1<<LIGHT);
     }
 
     void watchExternalLight(bool extlight)
     {
         if(!extlight)
         {
-            control &= ~(1<<LIGHT);
+            _control &= ~(1<<LIGHT);
             return;
         }
-        control |= (1<<LIGHT);
+        _control |= (1<<LIGHT);
     }
 
     void update()
@@ -233,7 +278,7 @@ public:
         // a future update will use specific weights to calculate the average
         
         // external light
-        if(control & (1<<LIGHT))
+        if(_control & (1<<LIGHT))
         {
             uint16_t value = EXTLIGHT;
             value = (value)>>2;
@@ -245,7 +290,7 @@ public:
         }
 
         // flash
-        if(control & (1<<FLASH))
+        if(_control & (1<<FLASH))
         {
             // here, state is used to check whether the LED is activated or not
             if((_state) && (millis() - _prevUpdate) > _onTime/100)
@@ -263,7 +308,7 @@ public:
         }
 
         //pulse
-        if(control & (1<<PULSE))
+        if(_control & (1<<PULSE))
         {
             // here, state is used to check whether the brightness is increasing (0) or decreasing (1)
             // _state is explicitly set 'false' and brightness set to 0 before starting pulse
@@ -272,7 +317,7 @@ public:
                 if(_brightness[PULSE] == _maxBrightness)
                     _state = true;
                 else
-                    _brightness[PULSE] += 1;
+                    _brightness[PULSE] = constrain(_brightness[PULSE] + _stepValue, _minBrightness, _maxBrightness);
                 _prevUpdate = millis();
             }
             if((_state) && (millis() - _prevUpdate) > _decrementStepTime)
@@ -280,46 +325,46 @@ public:
                 if(_brightness[PULSE] == _minBrightness)
                     _state = false;
                 else
-                    _brightness[PULSE] -= 1;
+                    _brightness[PULSE] = constrain(_brightness[PULSE] - _stepValue, _minBrightness, _maxBrightness);
                 _prevUpdate = millis();
             }
 
         }
 
         // bass routing
-        if(control & (1<<BASS))
+        if(_control & (1<<BASS))
         {
             uint16_t value = GETBASS;
-            // value is a 10 bit number, drop 2 to accomodate for uint8_t
-            _brightness[BASS] = (value)>>2;
+            // value is a 10 bit number, drop some bits to accomodate for set colour depth
+            _brightness[BASS] = (value)>>(10 - _colourDepth);
         }
 
         // mid routing
-        if(control & (1<<MID))
+        if(_control & (1<<MID))
         {
             uint16_t value = GETMID;
-            // value is a 10 bit number, drop 2 to accomodate for uint8_t
-            _brightness[MID] = (value)>>2;
+            // value is a 10 bit number, drop some bits to accomodate for set colour depth
+            _brightness[MID] = (value)>>(10 - _colourDepth);
         }
 
         // treble routing
-        if(control & (1<<TREBLE))
+        if(_control & (1<<TREBLE))
         {
             uint16_t value = GETTREBLE;
-            // value is a 10 bit number, drop 2 to accomodate for uint8_t
-            _brightness[TREBLE] = (value)>>2;
+            // value is a 10 bit number, drop some bits to accomodate for set colour depth
+            _brightness[TREBLE] = (value)>>(10 - _colourDepth);
         }
 
         float totalBrightness = 0;
         // weighted values of all the individual brightness values make the total.
         // a future update may have provisions for absolute value or custom weights.
         // equal weighting is used for now:
-        // weight = 255/activeChannels;
+        // weight = 255/_activeChannels;
 
         for (int i = 1; i < 7; i++)
         {
-            if(control & (1<<i))
-                totalBrightness += float(_brightness[i])/activeChannels;
+            if(_control & (1<<i))
+                totalBrightness += float(_brightness[i])/_activeChannels;
         }
 
         // if limits are different, constrain totalBrightness
@@ -330,3 +375,5 @@ public:
             return totalBrightness;
     }
 };
+
+#endif
