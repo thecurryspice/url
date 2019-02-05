@@ -18,7 +18,7 @@ private:
     uint16_t _incrementStepTime = 0, _decrementStepTime = 0;
     uint16_t _onTime = 0, _offTime = 0;
     unsigned long _prevUpdate = 0;
-    bool _state;
+    bool _state, _invert;
     byte _control = 0b00000000;    
 
 public:
@@ -114,6 +114,12 @@ public:
         // set the time variables for flashing and pulsing
         _onTime = Time;
         _offTime = Time;
+    }
+
+    // invert the signals for the LED
+    void invert(bool invertColour)
+    {
+        _invert = invertColour;
     }
 
     // limits the maximum brightness, in a sense that
@@ -262,7 +268,10 @@ public:
     {
         // simple update : refresh total-brightness 
         _brightness[TOTAL] = calculateBrightness();
-        analogWrite(_pin, _brightness[TOTAL]);
+        if(_invert)
+            analogWrite(_pin, 255 - _brightness[TOTAL]);
+        else
+            analogWrite(_pin, _brightness[TOTAL]);
     }
 
     void update(uint8_t brightness)
