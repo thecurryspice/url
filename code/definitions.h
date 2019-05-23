@@ -1,6 +1,8 @@
 #ifndef definitions_h
 #define definitions_h
 
+#include <avr/io.h>
+
 #define IND 13
 #define INDON digitalWrite(IND, HIGH);
 #define INDOFF digitalWrite(IND, LOW);
@@ -23,12 +25,12 @@ uint8_t analogRead8bit(uint8_t pin)
 	ADMUX |= _BV(ADLAR);
 
 #if defined(ADMUX)
-	ADMUX = (analog_reference << 6) | (pin & 0x07);
+	ADMUX |= (pin & 0x07);
 #endif
 
 #if defined(ADCSRA) && defined(ADCL)
 	// start the conversion
-	sbi(ADCSRA, ADSC);
+	ADCSRA |= _BV(ADSC);
 
 	// ADSC is cleared when the conversion finishes
 	while (bit_is_set(ADCSRA, ADSC));
