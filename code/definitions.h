@@ -17,34 +17,7 @@
 
 enum positions {LIGHT, TREBLE, MID, BASS, USER, PULSE, FLASH, TOTAL};
 
-uint8_t analogRead8bit(uint8_t pin)
-{
-	uint8_t result;
 
-	// set ADLAR high
-	ADMUX |= _BV(ADLAR);
-
-#if defined(ADMUX)
-	ADMUX |= (pin & 0x07);
-#endif
-
-#if defined(ADCSRA) && defined(ADCL)
-	// start the conversion
-	ADCSRA |= _BV(ADSC);
-
-	// ADSC is cleared when the conversion finishes
-	while (bit_is_set(ADCSRA, ADSC));
-
-	//read only ADCH, 8 bits
-	result = ADCH;
-#else
-	// we don't have an ADC, return 0
-	result = 0;
-#endif
-
-	// combine the two bytes
-	return result;
-}
 
 /*
 ------------
