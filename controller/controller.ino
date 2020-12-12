@@ -3,41 +3,52 @@
 //String red = "", green = "", blue = "";
 //SoftwareSerial blt(8,7);
 
+void setupADC()
+{
+    ADMUX |= (1 << REFS0);  // set reference voltage
+    ADMUX |= (1 << ADLAR);  // left align ADC value to 8 bits from ADCH register
+    ADCSRA |= (1 << ADPS2);                     // 16 prescaler for 76.9 KHz
+    // ADCSRA |= (1 << ADPS1) | (1 << ADPS0);    // 8 prescaler for 153.8 KHz
+    ADCSRA |= (1 << ADEN);  // enable ADC
+}
+
 LED Red(9);
 LED Green(10);
 LED Blue(11);
 
 void setup()
-{ 
-//    blt.begin(9600);
-//    Serial.begin(115200);
-//    pinMode(IND, OUTPUT);
+{
+    setupADC();
     
-    Red.setTime(500, 1000);
+    // blt.begin(9600);
+    Serial.begin(115200);
+    pinMode(IND, OUTPUT);
+    
+    Red.setTime(5000, 5000);
     Green.setTime(1000,2500);
     Blue.setTime(1500,500);
     
+    // Red.invert(true);
     // Red.pulse(true);
-    Red.invert(true);
-    Red.setColourDepth(8);
+    // Red.setColourDepth(8);
     // Red.watchExternalLight(true,127);
-    // Red.routeBass(true);
+    Red.routeBass(true);
     // Red.routeUser(true);
     // Red.setUserBrightness(255);
     // Serial.println(Red.getActiveChannels());
     
-    Green.pulse(true);
+    // Green.pulse(true);
     // Green.limit(160);
-    Green.setColourDepth(8);
+    // Green.setColourDepth(8);
     // Green.watchExternalLight(true,200);
-    // Green.routeMid(true);
+    Green.routeMid(true);
     // Green.routeUser(true);
     // Green.setUserBrightness(255);
     // Serial.println(Green.getActiveChannels());
     
     // Blue.flash(true);
-    Blue.invert(true);
-    Blue.setColourDepth(8);
+    // Blue.invert(true);
+    // Blue.setColourDepth(8);
     // Blue.watchExternalLight(true,127);
     // Blue.routeTreble(true);
     // Blue.routeUser(true);
