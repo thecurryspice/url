@@ -289,8 +289,7 @@ public:
         // external light
         if(_control & (1<<LIGHT))
         {
-            uint16_t value = EXTLIGHT;
-            value = (value)>>2;
+            uint8_t value = EXTLIGHT;
             if(value > _brightness[LIGHT])
             {
                 digitalWrite(_pin, LOW);
@@ -343,25 +342,24 @@ public:
         // bass routing
         if(_control & (1<<BASS))
         {
-            uint16_t value = GETBASS;
+            Serial.println(micros());
             // value is a 10 bit number, drop some bits to accomodate for set colour depth
-            _brightness[BASS] = (value)>>(10 - _colourDepth);
+            _brightness[BASS] = GETBASS;
+            Serial.println(micros());
         }
 
         // mid routing
         if(_control & (1<<MID))
         {
-            uint16_t value = GETMID;
             // value is a 10 bit number, drop some bits to accomodate for set colour depth
-            _brightness[MID] = (value)>>(10 - _colourDepth);
+            _brightness[MID] = GETMID;
         }
 
         // treble routing
         if(_control & (1<<TREBLE))
         {
-            uint16_t value = GETTREBLE;
             // value is a 10 bit number, drop some bits to accomodate for set colour depth
-            _brightness[TREBLE] = (value)>>(10 - _colourDepth);
+            _brightness[TREBLE] = GETTREBLE;
         }
 
         float totalBrightness = 0;
