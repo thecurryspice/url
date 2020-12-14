@@ -15,7 +15,7 @@ class LED
 {
 private:
     uint8_t _pin, _brightness[9] = {0,0,0,0,0,0,0,0,0}, _activeChannels = 0, _minBrightness = 0, _maxBrightness = 255, _minPulseBrightness = 0, _maxPulseBrightness = 255, _colourDepth = 0, _stepValue = 1;
-    uint8_t _randomStep = 1;
+    uint8_t _randomStep = 1, _randomJitter = 0;
     uint16_t _incrementStepTime = 0, _decrementStepTime = 0;
     uint16_t _onTime = 0, _offTime = 0;
     unsigned long _prevUpdate = 0;
@@ -105,9 +105,10 @@ public:
 
     void avoid(uint8_t a, uint8_t t, uint8_t thresh) {}
 
-    void setRandomStep(uint8_t randomStep)
+    void setRandomStep(uint8_t randomStep, uint8_t randomJitter)
     {
         _randomStep = randomStep;
+        _randomJitter = randomJitter;
     }
 
     void setTime(uint16_t onTime, uint16_t offTime)
@@ -396,16 +397,7 @@ public:
         if(_control & (1<<RANDOM))
         {
             // slowly move towards the randomly defined value
-            if(GETRANDOM(0, 2))
-            {
-                count++;
-                _brightness[RANDOM] = constrain(GETRANDOM(0,_randomStep+1), 0, 255);
-            }
-            else
-            {
-                count--;
-                _brightness[RANDOM] = constrain(GETRANDOM(0,_randomStep+1), 0, 255);
-            }
+            _brightness[RANDOM] = (GETRANDOM(0,_randomStep+1))*GETRANDOM(1,_randomJitter+1);
         }
 
         float totalBrightness = 0;
@@ -418,10 +410,14 @@ public:
         {
             if(_control & (1<<i))
                 totalBrightness += float(_brightness[i])/_activeChannels;
-                Serial.print(_brightness[i]);
-                Serial.print("\t");
+                #ifdef DEBUG_PRINT
+                    Serial.print(_brightness[i]);
+                    Serial.print("\t");
+                #endif
         }
+        #ifdef DEBUG_PRINT
         Serial.println();
+        #endif
 
         // if limits are different, constrain totalBrightness
         // this might be not required, will have to check the math here

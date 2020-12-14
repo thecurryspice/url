@@ -3,6 +3,7 @@
 
 #include <avr/io.h>
 
+// #define DEBUG_PRINT
 #define IND 13
 #define INDON digitalWrite(IND, HIGH);
 #define INDOFF digitalWrite(IND, LOW);
