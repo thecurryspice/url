@@ -14,9 +14,11 @@
 #define GETBASS ANALOGREAD(BASSPIN)
 #define GETMID ANALOGREAD(MIDPIN)
 #define GETTREBLE ANALOGREAD(TREBLEPIN)
-#define EXTLIGHT ANALOGREAD(LDRPIN)
+#define GETEXTLIGHT ANALOGREAD(LDRPIN)
+#define GETRANDOM(x,y) (uint8_t)random(x,y)
 
-enum positions {LIGHT, TREBLE, MID, BASS, USER, PULSE, FLASH, TOTAL};
+enum positions {RANDOM, FLASH, PULSE, USER, BASS, MID, TREBLE, LIGHT, TOTAL};
+//enum positions {LIGHT, TREBLE, MID, BASS, USER, PULSE, FLASH, TOTAL};
 
 // Faster ADC handling.
 // change analogRead8Bit to analogRead in lines 13, 14 and 15 to
@@ -36,70 +38,5 @@ uint8_t analogRead8bit(uint8_t pin)
 	result = ADCH;
 	return result;
 }
-
-/*
-------------
-CONTROL BYTE
-------------
-
-1 byte sent for each colour
-
-pos       7       6       5       4       3       2       1       0
-route     0       0       0       0       0       0       0       0
-                  F       P       L       U       B       M       T
-
-F : Flash
-L : Watch External Light Levels
-P : Pulse (Breather Mode)
-U : User
-B : Bass
-M : Mid
-T : Treble
-
-
-------------
-CONTROL BYTE
-------------
-
--------------------------------------------------------------------------
-
---------------
-CONTROL PACKET
---------------
-
-C<X><char>
-
-Eg: ~CRB		(where B represents 66, hence Flashing and Mid routing)
-
---------------
-CONTROL PACKET
---------------
-
--------------------------------------------------------------------------
-
-------------
-DATA PACKETS
-------------
-
-X = R/G/B
-
-TIME 		:	T<X><char><char><char><char>
-					
-	where   :	<char>    <char>			16-bit total-value
-			  multiplier  remainder		255*multiplier + remainder
-
-USER 		:	U<X><char>
-
-EXTLIGHT	:	E<X><char>
-
-
-Eg:	~TGmXxM	==> 	onTime = 255*109 + 88	offTime = 255*120 + 77
-	~URn
-	~EB/
-
-------------
-DATA PACKETS
-------------
-*/
 
 #endif
