@@ -21,7 +21,6 @@ private:
     unsigned long _prevUpdate = 0;
     bool _state, _invert;
     byte _control = 0b00000000;
-    int16_t count=0;
 
 public:
     LED(uint8_t pin)
@@ -302,7 +301,7 @@ public:
         // simple update : refresh total-brightness
         _brightness[TOTAL] = calculateBrightness();
         if(_invert)
-            analogWrite(_pin, 255 - _brightness[TOTAL]);
+            analogWrite(_pin, (0xFF)^(_brightness[TOTAL])); // 255 - _brightness[TOTAL])
         else
             analogWrite(_pin, _brightness[TOTAL]);
     }
@@ -326,7 +325,6 @@ public:
             if(value > _brightness[LIGHT])
             {
                 digitalWrite(_pin, LOW);
-                return;
             }
         }
 
@@ -334,13 +332,13 @@ public:
         if(_control & (1<<FLASH))
         {
             // here, state is used to check whether the LED is activated or not
-            if((_state) && (millis() - _prevUpdate) > _onTime/100)
+            if((_state) && (millis() - _prevUpdate) > _onTime)
             {
                 _brightness[FLASH] = _minBrightness;
                 _state = false;
                 _prevUpdate = millis();
             }
-            if((!_state) && (millis() - _prevUpdate) > _offTime/5)
+            if((!_state) && (millis() - _prevUpdate) > _offTime)
             {
                 _brightness[FLASH] = _maxBrightness;
                 _state = true;

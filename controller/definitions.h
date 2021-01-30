@@ -4,6 +4,7 @@
 #include <avr/io.h>
 
 // #define DEBUG_PRINT
+
 #define IND 13
 #define INDON digitalWrite(IND, HIGH);
 #define INDOFF digitalWrite(IND, LOW);
@@ -26,7 +27,6 @@ enum positions {RANDOM, FLASH, PULSE, USER, BASS, MID, TREBLE, LIGHT, TOTAL};
 // for more sensitivity
 uint8_t analogRead8bit(uint8_t pin)
 {
-	uint8_t result;
 	ADMUX |= (pin & 0x07);
 
   	// start the conversion
@@ -36,8 +36,7 @@ uint8_t analogRead8bit(uint8_t pin)
 	while (bit_is_set(ADCSRA, ADSC));
 
 	//read only ADCH, 8 bits
-	result = ADCH;
-	return result;
+	return ADCH;
 }
 
 #endif
