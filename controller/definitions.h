@@ -4,6 +4,7 @@
 #include <avr/io.h>
 
 // #define DEBUG_PRINT
+#define DEBUG_FPS
 
 #define IND 13
 #define INDON digitalWrite(IND, HIGH);

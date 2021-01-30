@@ -3,6 +3,13 @@
 //String red = "", green = "", blue = "";
 //SoftwareSerial blt(8,7);
 
+
+#ifdef DEBUG_FPS
+uint64_t prevFPSMillis = 0;
+uint32_t fps = 0;
+#endif
+
+
 void setupADC()
 {
     ADMUX |= (1 << REFS0);  // set reference voltage
@@ -23,46 +30,81 @@ void setup()
     // blt.begin(9600);
     Serial.begin(115200);
     pinMode(IND, OUTPUT);
-    
-    Red.setTime(5000, 5000);
-    Green.setTime(1000,2500);
-    Blue.setTime(1500,500);
-    
+
+    Red.setTime(1000, 1000);
+    Green.setTime(1000,2236);
+    Blue.setTime(1000,4236);
+
     // Red.invert(true);
-    // Red.pulse(true);
+    Red.pulse(true);
+    // Red.limitPulseBrightness(0,2);
     // Red.setColourDepth(8);
-    // Red.watchExternalLight(true,127);
-    Red.routeBass(true);
+    // Red.watchExtLight(true,127);
+    // Red.routeRandom(true);
+    // Red.setRandomStep(24,2);
+    // Red.routeBass(true);
+    // Red.routeMid(true);
+    // Red.routeTreble(true);
     // Red.routeUser(true);
-    // Red.setUserBrightness(255);
+    // Red.setUserBrightness(50);
     // Serial.println(Red.getActiveChannels());
-    
-    // Green.pulse(true);
-    // Green.limit(160);
-    // Green.setColourDepth(8);
-    // Green.watchExternalLight(true,200);
-    Green.routeMid(true);
+
+    // Green.invert(true);
+    Green.pulse(true);
+    // Green.limit(16,96);
+    // Green.routeRandom(true);
+    // Green.setRandomStep(8,1);
+    // Green.setColourDepth(4);
+    // Green.watchExtLight(true,200);
+    // Green.routeBass(true);
+    // Green.routeMid(true);
+    // Green.routeTreble(true);
     // Green.routeUser(true);
     // Green.setUserBrightness(255);
     // Serial.println(Green.getActiveChannels());
-    
+
+    Blue.pulse(true);
     // Blue.flash(true);
     // Blue.invert(true);
     // Blue.setColourDepth(8);
-    // Blue.watchExternalLight(true,127);
+    // Blue.watchExtLight(true,127);
+    // Blue.routeBass(true);
+    // Blue.routeMid(true);
     // Blue.routeTreble(true);
     // Blue.routeUser(true);
     // Blue.setUserBrightness(255);
+    // Blue.limit(40);
+    // randomSeed(A2);
+
+    #ifdef DEBUG_PRINT
     // Serial.println(Blue.getActiveChannels());
-//    Serial.println(Red.getColourDepth());
-//    Serial.println(Green.getColourDepth());
-//    Serial.println(Blue.getColourDepth());
-//    Serial.println(Red.getControlParameters());
-//    Serial.println(Green.getControlParameters());
-//    Serial.println(Blue.getControlParameters());
+    // Serial.println(Red.getColourDepth());
+    // Serial.println(Green.getColourDepth());
+    // Serial.println(Blue.getColourDepth());
+    // Serial.println(Red.getControlParameters());
+    // Serial.println(Green.getControlParameters());
+    // Serial.println(Blue.getControlParameters());
+    #endif
+
 }
 
-//String rxBuff;
+// updates the entire frame (each colour pixel once)
+inline void updateFrame()
+{
+    Red.update();
+    Green.update();
+    Blue.update();
+    fps++;
+    #ifdef DEBUG_FPS
+        if(millis() - prevFPSMillis > 1000)
+        {
+            Serial.print("FPS:\t");
+            Serial.println(fps);
+            fps = 0;
+            prevFPSMillis = millis();
+        }
+    #endif
+}
 
 void loop()
 {
@@ -72,11 +114,9 @@ void loop()
     if((1<<6) & redControl || (1<<5) & redControl)
     red.update();
     */
-    Red.update();
-    Green.update();
-    Blue.update();
+    updateFrame();
 }
-//    
+//
 //    int i;
 //    String rx = "", red = "", green = "", blue = "";
 //    while(blt.available())
@@ -135,7 +175,7 @@ void loop()
 //                Green.setControlParameters(true);
 //            if(rx.charAt(n+2) == 'B')
 //                Blue.setControlParameters(true);
-//        
+//
 //        if(rx.charAt(n+2) == 'F')
 //            Green.flash(true);
 //        else if(rx.charAt(n+2) == 'P')
@@ -218,9 +258,9 @@ void loop()
 //  // B M T uint8_t
 //  /*
 //  Incoming Message: 6 bytes
-//  
+//
 //      #X.X.X.R.G.B~
-//  
+//
 //  X = Status Byte of respective colour
 //  */
 //  Serial.println("Updating...");
