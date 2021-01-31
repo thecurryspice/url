@@ -1,5 +1,7 @@
 //#include <SoftwareSerial.h>
 #include "LED.h"
+#include "definitions.h"
+#include "adcHandler.h"
 //String red = "", green = "", blue = "";
 //SoftwareSerial blt(8,7);
 
@@ -9,26 +11,18 @@ uint64_t prevFPSMillis = 0;
 uint32_t fps = 0;
 #endif
 
-
-void setupADC()
-{
-    ADMUX |= (1 << REFS0);  // set reference voltage
-    ADMUX |= (1 << ADLAR);  // left align ADC value to 8 bits from ADCH register
-    ADCSRA |= (1 << ADPS2);                     // 16 prescaler for 76.9 KHz
-    // ADCSRA |= (1 << ADPS1) | (1 << ADPS0);    // 8 prescaler for 153.8 KHz
-    ADCSRA |= (1 << ADEN);  // enable ADC
-}
-
 LED Red(9);
 LED Green(10);
 LED Blue(11);
 
 void setup()
 {
-    setupADC();
-    
     // blt.begin(9600);
     Serial.begin(115200);
+
+    setupADC();
+    initADC();
+
     pinMode(IND, OUTPUT);
 
     Red.setTime(1000, 1000);
@@ -94,8 +88,8 @@ inline void updateFrame()
     Red.update();
     Green.update();
     Blue.update();
-    fps++;
     #ifdef DEBUG_FPS
+        fps++;
         if(millis() - prevFPSMillis > 1000)
         {
             Serial.print("FPS:\t");

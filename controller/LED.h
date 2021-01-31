@@ -1,4 +1,5 @@
 #include "definitions.h"
+#include "adcHandler.h"
 
 #ifndef LED_H
 #define LED_H
