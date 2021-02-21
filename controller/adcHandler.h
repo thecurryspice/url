@@ -7,6 +7,7 @@
 // volatile variables for storing values
 // from different channels in interrupted mode
 volatile uint8_t channelValue[4] = {0};
+const uint8_t channelOffset[4] = {10, 5, 0, 0};
 volatile uint8_t channelIndex = 0;
 volatile uint32_t check = 0;
 
@@ -39,7 +40,7 @@ ISR(ADC_vect)
 void initADC()
 {
     #ifdef ADC_INTERRUPT_MODE
-    Serial.println("Initiated in interrupt mode");
+    // Serial.println("Initiated in interrupt mode");
     ADCSRA |= (1 << ADIE);  // enable interrupt
     #endif
     ADCSRA |= (1 << ADEN);  // enable ADC
@@ -85,18 +86,17 @@ uint8_t analogRead8bit(uint8_t pin)
 {
     #ifdef ADC_INTERRUPT_MODE
         #ifdef DEBUG_ADC
-        Serial.print("Count:\t");
-        Serial.print(count);
+        Serial.print("Pin:\t");
+        Serial.print(pin);
         Serial.print("\tADCI: \t");
         Serial.println(channelValue[pin]);
         #endif
         // get the last updated channelValue
-        return channelValue[pin];
+        return (channelValue[pin]>channelOffset[pin]) ? channelValue[pin] : 0;
     #else
         ADMUX &= ~(0x0F);       // clear previous channel index (last 4 bits)
         ADMUX |= (pin & 0x07);  // set new channel index
-
-      	// start the conversion
+        // start the conversion
     	ADCSRA |= (1 << ADSC);
 
     	// ADSC is cleared when the conversion finishes
