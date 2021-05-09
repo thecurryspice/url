@@ -17,6 +17,7 @@ class LED
 private:
     uint8_t _pin, _brightness[9] = {0,0,0,0,0,0,0,0,0}, _activeChannels = 0, _minBrightness = 0, _maxBrightness = 255, _minPulseBrightness = 0, _maxPulseBrightness = 255, _colourDepth = 0, _stepValue = 1;
     uint8_t _randomStep = 1, _randomJitter = 0;
+    uint8_t bassIncrCount = 0, bassIncrCountThresh = 1, bassDecrCount = 0, bassDecrCountThresh = 1;
     uint16_t _incrementStepTime = 0, _decrementStepTime = 0;
     uint16_t _onTime = 0, _offTime = 0;
     unsigned long _prevUpdate = 0;
@@ -243,6 +244,32 @@ public:
             return;
         }
 
+        // set default breather mode off
+        bassIncrCount = 0;
+        bassDecrCount = 0;
+        bassIncrCountThresh = 1;
+        bassDecrCountThresh = 1;
+
+        _control |= (1<<BASS);
+
+        _activeChannels = getActiveChannels();
+    }
+
+    void routeBass(bool bass, uint8_t argIncrThresh, uint8_t argDecrThresh)
+    {
+        if(!bass)
+        {
+            _control &= ~(1<<BASS);
+            // nothing more to do if bass is not being routed
+            return;
+        }
+
+        // reset counters and update valuesfor thresholds
+        bassIncrCount = 0;
+        bassDecrCount = 0;
+        bassIncrCountThresh = argIncrThresh;
+        bassDecrCountThresh = argDecrThresh;
+
         _control |= (1<<BASS);
 
         _activeChannels = getActiveChannels();
@@ -325,7 +352,7 @@ public:
             uint8_t value = GETEXTLIGHT;
             if(value > _brightness[LIGHT])
             {
-                digitalWrite(_pin, LOW);
+                return 0;
             }
         }
 
@@ -335,16 +362,23 @@ public:
             // here, state is used to check whether the LED is activated or not
             if((_state) && (millis() - _prevUpdate) > _onTime)
             {
-                _brightness[FLASH] = _minBrightness;
                 _state = false;
                 _prevUpdate = millis();
+                #ifndef FLASH_GATE
+                    _brightness[FLASH] = _minBrightness;
+                #else
+                    return _minBrightness;
+                #endif
             }
             if((!_state) && (millis() - _prevUpdate) > _offTime)
             {
-                _brightness[FLASH] = _maxBrightness;
                 _state = true;
                 _prevUpdate = millis();
+                #ifndef FLASH_GATE
+                    _brightness[FLASH] = _maxBrightness;
+                #endif
             }
+
         }
 
         //pulse
@@ -375,7 +409,24 @@ public:
         if(_control & (1<<BASS))
         {
             // value is a 10 bit number, drop some bits to accomodate for set colour depth
-            _brightness[BASS] = GETBASS;
+            if(GETBASS > _brightness[BASS])
+            {
+                bassIncrCount++;
+                if(bassIncrCount == bassIncrCountThresh)
+                {
+                    _brightness[BASS] = min(_brightness[BASS] + 1, 255);
+                    bassIncrCount = 0;
+                }
+            }
+            else
+            {
+                bassDecrCount++;
+                if(bassDecrCount == bassDecrCountThresh)
+                {
+                    _brightness[BASS] = max(_brightness[BASS] - 1, 0);
+                    bassDecrCount = 0;
+                }
+            }
         }
 
         // mid routing
@@ -405,7 +456,11 @@ public:
         // equal weighting is used for now:
         // weight = 255/_activeChannels;
 
+        #ifndef FLASH_GATE
         for (int i = 0; i < 7; i++)
+        #else
+        for (int i = 1; i < 7; i++) // not including flash brightness
+        #endif
         {
             if(_control & (1<<i))
                 totalBrightness += float(_brightness[i])/_activeChannels;

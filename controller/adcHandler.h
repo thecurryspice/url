@@ -7,6 +7,12 @@
 // volatile variables for storing values
 // from different channels in interrupted mode
 volatile uint8_t channelValue[4] = {0};
+#ifdef ADAPTIVE_REFERENCE
+    static uint8_t channelOffset[4] = {0, 0, 0, 0};
+#else
+    static uint8_t channelOffset[4] = {22, 16, 20, 5};
+    static uint8_t channelTrim[4] = {6, 32, 6, 6};
+#endif
 volatile uint8_t channelIndex = 0;
 volatile uint32_t check = 0;
 
@@ -39,7 +45,7 @@ ISR(ADC_vect)
 void initADC()
 {
     #ifdef ADC_INTERRUPT_MODE
-    Serial.println("Initiated in interrupt mode");
+    // Serial.println("Initiated in interrupt mode");
     ADCSRA |= (1 << ADIE);  // enable interrupt
     #endif
     ADCSRA |= (1 << ADEN);  // enable ADC
@@ -66,7 +72,11 @@ void stopADC()
 void setupADC()
 {
     stopADC();
-    ADMUX |= (1 << REFS0);  // set reference voltage
+    #ifdef ADAPTIVE_REFERENCE
+        ADMUX &= ~(1 << REFS0 | 1 << REFS1);    // set AREF pin as reference
+    #else
+        ADMUX |= (1 << REFS0);  // set default reference voltage
+    #endif
     ADMUX |= (1 << ADLAR);  // left align ADC value to 8 bits from ADCH register
 
     // There's no need to spam the processor with ADC interrupts.
@@ -85,32 +95,52 @@ uint8_t analogRead8bit(uint8_t pin)
 {
     #ifdef ADC_INTERRUPT_MODE
         #ifdef DEBUG_ADC
-        Serial.print("Count:\t");
-        Serial.print(count);
-        Serial.print("\tADCI: \t");
+        Serial.print(F("Pin:\t"));
+        Serial.print(pin);
+        Serial.print(F("\tADCI: \t"));
         Serial.println(channelValue[pin]);
         #endif
         // get the last updated channelValue
-        return channelValue[pin];
+        return (channelValue[pin]>(channelOffset[pin]+channelTrim[pin])) ? channelValue[pin]-channelOffset[pin] : 0;
     #else
         ADMUX &= ~(0x0F);       // clear previous channel index (last 4 bits)
         ADMUX |= (pin & 0x07);  // set new channel index
-
-      	// start the conversion
+        // start the conversion
     	ADCSRA |= (1 << ADSC);
 
     	// ADSC is cleared when the conversion finishes
     	while (bit_is_set(ADCSRA, ADSC));
 
         #ifdef DEBUG_ADC
-        Serial.print("ADC:\t");
+        Serial.print(F("ADC:\t"));
         Serial.print(ADCH);
-        Serial.print("\t on pin \t");
+        Serial.print(F("\t on pin \t"));
         Serial.println(pin);
         #endif
 
     	//read only ADCH, 8 bits
     	return ADCH;
+    #endif
+}
+
+void calibrateBass()
+{
+    #ifdef DEBUG_ADC
+    Serial.println(F("Calibrating Bass input"));
+    #endif
+    channelOffset[BASSPIN] = 0;
+    uint16_t average = 0;
+    for (uint8_t i = 0; i < 16; i++)
+    {
+        average += analogRead8bit(BASSPIN);
+        delay(100);
+    }
+    average = average >> 4;
+    channelOffset[BASSPIN] = average;
+    #ifdef DEBUG_ADC
+    Serial.print("Calibrated Zero at: ");
+    Serial.println(average);
+    delay(1000);
     #endif
 }
 
