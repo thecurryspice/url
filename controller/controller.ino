@@ -14,6 +14,21 @@ uint32_t fps = 0;
 LED Red(9);
 LED Green(10);
 LED Blue(11);
+LED heartbeat(13);
+
+#ifdef DEBUG_WAVE
+void pollADC()
+{
+    Serial.print("0:");
+    Serial.print(ANALOGREAD(CHANNEL0));
+    Serial.print("\t1:");
+    Serial.print(ANALOGREAD(CHANNEL1));
+    Serial.print("\t2:");
+    Serial.print(ANALOGREAD(CHANNEL2));
+    Serial.print("\t3:");
+    Serial.println(ANALOGREAD(CHANNEL3));
+}
+#endif
 
 void setup()
 {
@@ -23,44 +38,53 @@ void setup()
     setupADC();
     initADC();
 
-    pinMode(IND, OUTPUT);
+    // wait for ADC to stabilise before calibrating
+    delay(500);
+    calibrateBass();
 
-    Red.setTime(1000, 1000);
-    Green.setTime(1000,2236);
-    Blue.setTime(1000,4236);
+    Red.setTime(4000, 4000);
+    Green.setTime(4000, 4000);//2236);
+    Blue.setTime(4000, 4000);//4236);
 
     // Red.invert(true);
-    Red.pulse(true);
-    // Red.limitPulseBrightness(0,2);
+    // Red.pulse(true);
+    // Red.limitPulseBrightness(0,40);
+    // Red.flash(true);
     // Red.setColourDepth(8);
     // Red.watchExtLight(true,127);
     // Red.routeRandom(true);
     // Red.setRandomStep(24,2);
-    // Red.routeBass(true);
+    Red.routeBass(true, 2, 128);
     // Red.routeMid(true);
     // Red.routeTreble(true);
     // Red.routeUser(true);
-    // Red.setUserBrightness(50);
+    // Red.setUserBrightness(1);
     // Serial.println(Red.getActiveChannels());
 
     // Green.invert(true);
-    Green.pulse(true);
-    // Green.limit(16,96);
+    // Green.pulse(true);
+    // Green.limitPulseBrightness(0,10);
+    // Green.flash(true);
+    // Green.setTime(2,67);
     // Green.routeRandom(true);
     // Green.setRandomStep(8,1);
     // Green.setColourDepth(4);
     // Green.watchExtLight(true,200);
-    // Green.routeBass(true);
+    Green.routeBass(true, 2, 128);
     // Green.routeMid(true);
     // Green.routeTreble(true);
     // Green.routeUser(true);
     // Green.setUserBrightness(255);
     // Serial.println(Green.getActiveChannels());
 
-    Blue.pulse(true);
-    // Blue.flash(true);
     // Blue.invert(true);
+    // Blue.pulse(true);
+    // Blue.limitPulseBrightness(0,127);
+    // Blue.flash(true);
+    // Blue.setTime(255,255);
     // Blue.setColourDepth(8);
+    // Blue.routeRandom(true);
+    // Blue.setRandomStep(8,1);
     // Blue.watchExtLight(true,127);
     // Blue.routeBass(true);
     // Blue.routeMid(true);
@@ -70,28 +94,26 @@ void setup()
     // Blue.limit(40);
     // randomSeed(A2);
 
-    #ifdef DEBUG_PRINT
-    // Serial.println(Blue.getActiveChannels());
-    // Serial.println(Red.getColourDepth());
-    // Serial.println(Green.getColourDepth());
-    // Serial.println(Blue.getColourDepth());
-    // Serial.println(Red.getControlParameters());
-    // Serial.println(Green.getControlParameters());
-    // Serial.println(Blue.getControlParameters());
-    #endif
+    heartbeat.flash(true);
 
+    // update once to reset to zero (in case of invert(true)))
+    updateFrame();
 }
 
+int redBright = 0, decrCount = 0, incrCount = 0;
+uint64_t prevRedMillis = 0;
 // updates the entire frame (each colour pixel once)
 inline void updateFrame()
 {
     Red.update();
     Green.update();
     Blue.update();
+    heartbeat.update();
     #ifdef DEBUG_FPS
         fps++;
         if(millis() - prevFPSMillis > 1000)
         {
+            heartbeat.setTime(4, fps>>2);
             Serial.print("FPS:\t");
             Serial.println(fps);
             fps = 0;
@@ -102,13 +124,15 @@ inline void updateFrame()
 
 void loop()
 {
-    /*
-    if((1<<3) & redControl)
-    red.setBrightness(X)
-    if((1<<6) & redControl || (1<<5) & redControl)
-    red.update();
-    */
-    updateFrame();
+    // uint8_t flashTime = constrain(GETBASS<<2,50,255);
+    // Serial.println(flashTime);
+    // Serial.print("\t");
+    // Blue.setTime(flashTime);
+    #ifndef DEBUG_WAVE
+        updateFrame();
+    #else
+        pollADC();
+    #endif
 }
 //
 //    int i;
